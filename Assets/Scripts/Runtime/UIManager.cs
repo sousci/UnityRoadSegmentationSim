@@ -11,20 +11,26 @@ public class UIManager : MonoBehaviour
     private Text helpText;
     private GameObject vehiclePipPanel;
     private RawImage vehiclePipImage;
+    private GameObject realtimeSegmentationPanel;
+    private RawImage realtimeSegmentationImage;
+    private Text realtimeSegmentationTitleText;
+    private Text realtimeSegmentationStatusText;
     private GameObject segmentationLegendPanel;
     private VehicleController vehicle;
     private CameraManager cameraManager;
     private SegmentationMaterialManager segmentationManager;
     private DatasetCaptureManager datasetCaptureManager;
+    private RealtimeSegmentationManager realtimeSegmentationManager;
     private bool isHelpVisible = true;
     private bool isVehiclePipVisible = true;
 
-    public void Initialize(VehicleController vehicleController, CameraManager cameras, SegmentationMaterialManager segmentation, DatasetCaptureManager captureManager)
+    public void Initialize(VehicleController vehicleController, CameraManager cameras, SegmentationMaterialManager segmentation, DatasetCaptureManager captureManager, RealtimeSegmentationManager realtimeSegmentation)
     {
         vehicle = vehicleController;
         cameraManager = cameras;
         segmentationManager = segmentation;
         datasetCaptureManager = captureManager;
+        realtimeSegmentationManager = realtimeSegmentation;
         CreateCanvas();
     }
 
@@ -39,16 +45,31 @@ public class UIManager : MonoBehaviour
         string cameraName = cameraManager != null ? cameraManager.CurrentCameraName : "None";
         string segmentationMode = segmentationManager != null && segmentationManager.IsSegmentationMode ? "ON" : "OFF";
         string captureMode = datasetCaptureManager != null && datasetCaptureManager.IsContinuousCaptureEnabled ? "AUTO" : "MANUAL";
+        string realtimeMode = realtimeSegmentationManager != null && realtimeSegmentationManager.IsEnabled ? "ON" : "OFF";
 
         statusText.text =
             "Camera: " + cameraName + "\n" +
             "Speed: " + speed.ToString("0.0") + " km/h\n" +
-            "Segmentation: " + segmentationMode + "    Capture: " + captureMode + "\n" +
-            "Shot: K    Auto: L    PiP: P    Help: H";
+            "Seg: " + segmentationMode + "    RT: " + realtimeMode + "    Capture: " + captureMode + "\n" +
+            "I: RTSeg    O: Provider    K: Shot    L: Auto    P: PiP    H: Help";
 
         if (segmentationLegendPanel != null && segmentationManager != null)
         {
             segmentationLegendPanel.SetActive(segmentationManager.IsSegmentationMode);
+        }
+
+        if (realtimeSegmentationPanel != null && realtimeSegmentationManager != null)
+        {
+            realtimeSegmentationPanel.SetActive(realtimeSegmentationManager.IsEnabled);
+            if (realtimeSegmentationTitleText != null)
+            {
+                realtimeSegmentationTitleText.text = "Realtime Segmentation: " + realtimeSegmentationManager.ProviderName + "  I/O";
+            }
+
+            if (realtimeSegmentationStatusText != null)
+            {
+                realtimeSegmentationStatusText.text = realtimeSegmentationManager.StatusText;
+            }
         }
     }
 
@@ -103,7 +124,7 @@ public class UIManager : MonoBehaviour
         panelRect.anchorMax = new Vector2(0f, 1f);
         panelRect.pivot = new Vector2(0f, 1f);
         panelRect.anchoredPosition = new Vector2(12f, -12f);
-        panelRect.sizeDelta = new Vector2(330f, 92f);
+        panelRect.sizeDelta = new Vector2(520f, 92f);
 
         GameObject textObject = new GameObject("StatusText");
         textObject.transform.SetParent(panelObject.transform, false);
@@ -122,6 +143,7 @@ public class UIManager : MonoBehaviour
 
         CreateHelpPanel(canvasObject.transform);
         CreateVehiclePipPanel(canvasObject.transform);
+        CreateRealtimeSegmentationPanel(canvasObject.transform);
         CreateSegmentationLegendPanel(canvasObject.transform);
     }
 
@@ -138,7 +160,7 @@ public class UIManager : MonoBehaviour
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
         panelRect.anchoredPosition = new Vector2(-12f, -12f);
-        panelRect.sizeDelta = new Vector2(420f, 330f);
+        panelRect.sizeDelta = new Vector2(440f, 390f);
 
         GameObject titleObject = new GameObject("HelpTitle");
         titleObject.transform.SetParent(helpPanel.transform, false);
@@ -173,6 +195,8 @@ public class UIManager : MonoBehaviour
             "View\n" +
             "C: Switch camera\n" +
             "P: Show / hide VehicleCamera PiP\n" +
+            "I: Toggle realtime segmentation preview\n" +
+            "O: Switch GroundTruth / external model\n" +
             "M: Normal / segmentation colors\n" +
             "K: Save RGB + segmentation mask\n" +
             "L: Toggle continuous capture\n" +
@@ -183,8 +207,11 @@ public class UIManager : MonoBehaviour
             "- Road damage objects are visible on the road.\n" +
             "- Segmentation mode changes objects to class colors.\n" +
             "- VehicleCamera is the future AI input view.\n\n" +
+            "Realtime Baseline\n" +
+            "I shows the segmentation stream.\n" +
+            "O switches GroundTruth and external HTTP model.\n\n" +
             "Capture Output\n" +
-            "Assets/Captures/rgb, mask, metadata\n\n" +
+            "Captures/rgb, mask, metadata\n\n" +
             "Phase 1 excludes AI inference, VR, OSM, and autopilot.";
 
         RectTransform textRect = textObject.GetComponent<RectTransform>();
@@ -242,6 +269,75 @@ public class UIManager : MonoBehaviour
         imageRect.anchorMax = Vector2.one;
         imageRect.offsetMin = new Vector2(8f, 8f);
         imageRect.offsetMax = new Vector2(-8f, -32f);
+    }
+
+    private void CreateRealtimeSegmentationPanel(Transform canvasTransform)
+    {
+        realtimeSegmentationPanel = new GameObject("RealtimeSegmentationPreview");
+        realtimeSegmentationPanel.transform.SetParent(canvasTransform, false);
+
+        Image panelImage = realtimeSegmentationPanel.AddComponent<Image>();
+        panelImage.color = new Color(0f, 0f, 0f, 0.72f);
+
+        RectTransform panelRect = realtimeSegmentationPanel.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(1f, 0f);
+        panelRect.anchorMax = new Vector2(1f, 0f);
+        panelRect.pivot = new Vector2(1f, 0f);
+        panelRect.anchoredPosition = new Vector2(-12f, 238f);
+        panelRect.sizeDelta = new Vector2(330f, 214f);
+
+        GameObject titleObject = new GameObject("RealtimeSegmentationPreview_Title");
+        titleObject.transform.SetParent(realtimeSegmentationPanel.transform, false);
+
+        realtimeSegmentationTitleText = titleObject.AddComponent<Text>();
+        realtimeSegmentationTitleText.font = LoadRuntimeFont();
+        realtimeSegmentationTitleText.fontSize = 14;
+        realtimeSegmentationTitleText.fontStyle = FontStyle.Bold;
+        realtimeSegmentationTitleText.alignment = TextAnchor.MiddleLeft;
+        realtimeSegmentationTitleText.color = Color.white;
+        realtimeSegmentationTitleText.text = "Realtime Segmentation Baseline  I";
+
+        RectTransform titleRect = titleObject.GetComponent<RectTransform>();
+        titleRect.anchorMin = new Vector2(0f, 1f);
+        titleRect.anchorMax = new Vector2(1f, 1f);
+        titleRect.pivot = new Vector2(0.5f, 1f);
+        titleRect.anchoredPosition = new Vector2(0f, -4f);
+        titleRect.sizeDelta = new Vector2(-16f, 24f);
+
+        GameObject imageObject = new GameObject("RealtimeSegmentationPreview_Image");
+        imageObject.transform.SetParent(realtimeSegmentationPanel.transform, false);
+
+        realtimeSegmentationImage = imageObject.AddComponent<RawImage>();
+        realtimeSegmentationImage.color = Color.white;
+        if (realtimeSegmentationManager != null)
+        {
+            realtimeSegmentationImage.texture = realtimeSegmentationManager.OutputTexture;
+        }
+
+        RectTransform imageRect = imageObject.GetComponent<RectTransform>();
+        imageRect.anchorMin = Vector2.zero;
+        imageRect.anchorMax = Vector2.one;
+        imageRect.offsetMin = new Vector2(8f, 26f);
+        imageRect.offsetMax = new Vector2(-8f, -32f);
+
+        GameObject statusObject = new GameObject("RealtimeSegmentationPreview_Status");
+        statusObject.transform.SetParent(realtimeSegmentationPanel.transform, false);
+
+        realtimeSegmentationStatusText = statusObject.AddComponent<Text>();
+        realtimeSegmentationStatusText.font = LoadRuntimeFont();
+        realtimeSegmentationStatusText.fontSize = 12;
+        realtimeSegmentationStatusText.alignment = TextAnchor.MiddleLeft;
+        realtimeSegmentationStatusText.color = Color.white;
+        realtimeSegmentationStatusText.text = "Idle";
+
+        RectTransform statusRect = statusObject.GetComponent<RectTransform>();
+        statusRect.anchorMin = new Vector2(0f, 0f);
+        statusRect.anchorMax = new Vector2(1f, 0f);
+        statusRect.pivot = new Vector2(0.5f, 0f);
+        statusRect.anchoredPosition = new Vector2(0f, 6f);
+        statusRect.sizeDelta = new Vector2(-16f, 18f);
+
+        realtimeSegmentationPanel.SetActive(false);
     }
 
     private void CreateSegmentationLegendPanel(Transform canvasTransform)

@@ -15,6 +15,11 @@ public class SceneBuilder : MonoBehaviour
     private SegmentationMaterialManager segmentationManager;
     private readonly Dictionary<string, Material> normalMaterials = new Dictionary<string, Material>();
     private readonly Dictionary<string, Material> segmentationMaterials = new Dictionary<string, Material>();
+    private Material vehiclePaintMaterial;
+    private Material vehicleWindowMaterial;
+    private Material vehicleTireMaterial;
+    private Material vehicleLightMaterial;
+    private Material vehicleTailLightMaterial;
 
     private Transform environmentRoot;
     private Transform roadsRoot;
@@ -68,20 +73,26 @@ public class SceneBuilder : MonoBehaviour
 
     private void CreateMaterials()
     {
-        AddClassMaterials("normal_road", new Color(0.16f, 0.16f, 0.16f), new Color(0.2f, 0.2f, 0.2f));
-        AddClassMaterials("sidewalk", new Color(0.48f, 0.48f, 0.44f), new Color(0.55f, 0.35f, 0.1f));
-        AddClassMaterials("lane_line", Color.white, Color.yellow);
-        AddClassMaterials("crosswalk", Color.white, new Color(1f, 0f, 1f));
+        AddClassMaterials("normal_road", new Color(0.20f, 0.20f, 0.19f), new Color(0.2f, 0.2f, 0.2f));
+        AddClassMaterials("sidewalk", new Color(0.60f, 0.58f, 0.52f), new Color(0.55f, 0.35f, 0.1f));
+        AddClassMaterials("lane_line", new Color(0.92f, 0.90f, 0.84f), Color.yellow);
+        AddClassMaterials("crosswalk", new Color(0.92f, 0.90f, 0.84f), new Color(1f, 0f, 1f));
         AddClassMaterials("puddle", new Color(0.06f, 0.18f, 0.28f, 0.85f), new Color(0f, 0.4f, 1f));
         AddClassMaterials("crack", new Color(0.02f, 0.02f, 0.02f), new Color(0f, 0f, 0f));
         AddClassMaterials("bump", new Color(0.33f, 0.28f, 0.21f), new Color(1f, 0.5f, 0f));
         AddClassMaterials("hole", new Color(0.01f, 0.01f, 0.01f), new Color(0.45f, 0f, 0f));
         AddClassMaterials("construction_area", new Color(0.95f, 0.45f, 0.05f), new Color(1f, 0f, 0f));
         AddClassMaterials("obstacle", new Color(0.45f, 0.25f, 0.12f), new Color(0f, 1f, 1f));
-        AddClassMaterials("building", new Color(0.54f, 0.56f, 0.58f), new Color(0.35f, 0.1f, 0.7f));
+        AddClassMaterials("building", new Color(0.52f, 0.55f, 0.57f), new Color(0.35f, 0.1f, 0.7f));
         AddClassMaterials("traffic_light", new Color(0.05f, 0.05f, 0.05f), new Color(1f, 0.85f, 0f));
-        AddClassMaterials("pedestrian_area", new Color(0.35f, 0.46f, 0.32f), new Color(0f, 1f, 0f));
-        AddClassMaterials("background", new Color(0.42f, 0.60f, 0.34f), new Color(0.1f, 0.1f, 0.1f));
+        AddClassMaterials("pedestrian_area", new Color(0.36f, 0.40f, 0.31f), new Color(0f, 1f, 0f));
+        AddClassMaterials("background", new Color(0.38f, 0.44f, 0.34f), new Color(0.1f, 0.1f, 0.1f));
+
+        vehiclePaintMaterial = CreateMaterial("MAT_Normal_vehicle_paint", new Color(0.72f, 0.36f, 0.14f));
+        vehicleWindowMaterial = CreateMaterial("MAT_Normal_vehicle_glass", new Color(0.06f, 0.09f, 0.12f));
+        vehicleTireMaterial = CreateMaterial("MAT_Normal_vehicle_tire", new Color(0.015f, 0.015f, 0.015f));
+        vehicleLightMaterial = CreateMaterial("MAT_Normal_vehicle_headlight", new Color(1f, 0.92f, 0.62f));
+        vehicleTailLightMaterial = CreateMaterial("MAT_Normal_vehicle_taillight", new Color(0.8f, 0.05f, 0.03f));
     }
 
     private void AddClassMaterials(string className, Color normalColor, Color segmentationColor)
@@ -95,6 +106,7 @@ public class SceneBuilder : MonoBehaviour
         Material material = new Material(Shader.Find("Standard"));
         material.name = materialName;
         material.color = color;
+        material.SetFloat("_Glossiness", 0.22f);
         return material;
     }
 
@@ -104,7 +116,10 @@ public class SceneBuilder : MonoBehaviour
         lightObject.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
         Light sun = lightObject.AddComponent<Light>();
         sun.type = LightType.Directional;
-        sun.intensity = 1.1f;
+        sun.intensity = 1.25f;
+        sun.shadows = LightShadows.Soft;
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientLight = new Color(0.58f, 0.64f, 0.70f);
 
         CreateSemanticCube("Ground_Background", new Vector3(0f, -0.08f, 0f), new Vector3(90f, 0.08f, 90f), "background", 14, "Background", environmentRoot);
     }
@@ -154,14 +169,14 @@ public class SceneBuilder : MonoBehaviour
                 continue;
             }
 
-            RemoveCollider(CreateSemanticCube("LaneLine_EastWest_" + i, new Vector3(i * 6f, 0.18f, 0f), new Vector3(3.5f, 0.04f, 0.16f), "lane_line", 3, "LaneLine", roadMarksRoot));
-            RemoveCollider(CreateSemanticCube("LaneLine_NorthSouth_" + i, new Vector3(0f, 0.19f, i * 6f), new Vector3(0.16f, 0.04f, 3.5f), "lane_line", 3, "LaneLine", roadMarksRoot));
+            RemoveCollider(CreateSemanticCube("LaneLine_EastWest_" + i, new Vector3(i * 6f, 0.067f, 0f), new Vector3(3.5f, 0.012f, 0.16f), "lane_line", 3, "LaneLine", roadMarksRoot));
+            RemoveCollider(CreateSemanticCube("LaneLine_NorthSouth_" + i, new Vector3(0f, 0.077f, i * 6f), new Vector3(0.16f, 0.012f, 3.5f), "lane_line", 3, "LaneLine", roadMarksRoot));
         }
 
-        CreateCrosswalk("Crosswalk_West", new Vector3(-7.5f, 0.2f, 0f), true);
-        CreateCrosswalk("Crosswalk_East", new Vector3(7.5f, 0.2f, 0f), true);
-        CreateCrosswalk("Crosswalk_North", new Vector3(0f, 0.21f, 7.5f), false);
-        CreateCrosswalk("Crosswalk_South", new Vector3(0f, 0.21f, -7.5f), false);
+        CreateCrosswalk("Crosswalk_West", new Vector3(-7.5f, 0.077f, 0f), true);
+        CreateCrosswalk("Crosswalk_East", new Vector3(7.5f, 0.077f, 0f), true);
+        CreateCrosswalk("Crosswalk_North", new Vector3(0f, 0.077f, 7.5f), false);
+        CreateCrosswalk("Crosswalk_South", new Vector3(0f, 0.077f, -7.5f), false);
     }
 
     private void CreateCrosswalk(string baseName, Vector3 center, bool stripesAlongZ)
@@ -169,7 +184,7 @@ public class SceneBuilder : MonoBehaviour
         for (int i = -3; i <= 3; i++)
         {
             Vector3 position = center + (stripesAlongZ ? new Vector3(0f, 0f, i * 0.75f) : new Vector3(i * 0.75f, 0f, 0f));
-            Vector3 scale = stripesAlongZ ? new Vector3(4f, 0.04f, 0.28f) : new Vector3(0.28f, 0.04f, 4f);
+            Vector3 scale = stripesAlongZ ? new Vector3(4f, 0.012f, 0.28f) : new Vector3(0.28f, 0.012f, 4f);
             GameObject stripe = CreateSemanticCube(baseName + "_Stripe_" + (i + 4), position, scale, "crosswalk", 4, "Crosswalk", roadMarksRoot);
             RemoveCollider(stripe);
         }
@@ -187,7 +202,33 @@ public class SceneBuilder : MonoBehaviour
         for (int i = 0; i < positions.Length; i++)
         {
             Vector3 scale = new Vector3(7f + (i % 3), positions[i].y * 2f, 6f + (i % 2) * 2f);
-            CreateSemanticCube("Building_Block_" + (i + 1), positions[i], scale, "building", 11, "Building", buildingsRoot);
+            GameObject building = CreateSemanticCube("Building_Block_" + (i + 1), positions[i], scale, "building", 11, "Building", buildingsRoot);
+            AddBuildingWindows(building, i);
+        }
+    }
+
+    private void AddBuildingWindows(GameObject building, int buildingIndex)
+    {
+        Material windowMaterial = CreateMaterial("MAT_Normal_BuildingWindow_" + buildingIndex, new Color(0.20f, 0.24f, 0.27f));
+        Bounds bounds = building.GetComponent<Renderer>().bounds;
+        int rows = Mathf.Max(2, Mathf.FloorToInt(bounds.size.y / 1.6f));
+        int columns = Mathf.Max(2, Mathf.FloorToInt(bounds.size.x / 1.6f));
+
+        for (int row = 0; row < rows; row++)
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                if ((row + column + buildingIndex) % 3 == 0)
+                {
+                    continue;
+                }
+
+                float x = bounds.min.x + 0.8f + column * (bounds.size.x - 1.6f) / Mathf.Max(1, columns - 1);
+                float y = bounds.min.y + 1.1f + row * 1.25f;
+                float z = bounds.min.z - 0.035f;
+                GameObject window = CreateSemanticCube(building.name + "_Window_Front_" + row + "_" + column, new Vector3(x, y, z), new Vector3(0.46f, 0.38f, 0.025f), "building", 11, "Building", buildingsRoot, windowMaterial);
+                RemoveCollider(window);
+            }
         }
     }
 
@@ -259,12 +300,12 @@ public class SceneBuilder : MonoBehaviour
 
     private void CreateRoadDamages()
     {
-        RemoveCollider(CreateSemanticCylinder("Road_Puddle_01", new Vector3(-18f, 0.23f, -1.7f), new Vector3(2.2f, 0.03f, 1.2f), "puddle", 5, "Road_Puddle", roadDamagesRoot));
-        CreateCrack("Road_Crack_01", new Vector3(-8f, 0.25f, 2.2f));
-        RemoveCollider(CreateSemanticCube("Road_Bump_01", new Vector3(14f, 0.28f, -1.8f), new Vector3(3.2f, 0.28f, 1.0f), "bump", 7, "Road_Bump", roadDamagesRoot));
-        RemoveCollider(CreateSemanticCylinder("Road_Hole_01", new Vector3(22f, 0.23f, 1.7f), new Vector3(1.5f, 0.08f, 1.5f), "hole", 8, "Road_Hole", roadDamagesRoot));
-        RemoveCollider(CreateSemanticCube("Road_Construction_Zone_01", new Vector3(-1.8f, 0.26f, -20f), new Vector3(4f, 0.1f, 5f), "construction_area", 9, "Road_Construction", roadDamagesRoot));
-        CreateSemanticCube("Road_Obstacle_Box_01", new Vector3(8f, 0.55f, 2.4f), new Vector3(1.2f, 0.8f, 0.9f), "obstacle", 10, "Road_Obstacle", roadDamagesRoot);
+        RemoveCollider(CreateSemanticCylinder("Road_Puddle_01", new Vector3(-18f, 0.067f, -1.7f), new Vector3(2.2f, 0.012f, 1.2f), "puddle", 5, "Road_Puddle", roadDamagesRoot));
+        CreateCrack("Road_Crack_01", new Vector3(-8f, 0.067f, 2.2f));
+        RemoveCollider(CreateSemanticCube("Road_Bump_01", new Vector3(14f, 0.12f, -1.8f), new Vector3(3.2f, 0.12f, 1.0f), "bump", 7, "Road_Bump", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCylinder("Road_Hole_01", new Vector3(22f, 0.073f, 1.7f), new Vector3(1.5f, 0.025f, 1.5f), "hole", 8, "Road_Hole", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCube("Road_Construction_Zone_01", new Vector3(-1.8f, 0.077f, -20f), new Vector3(4f, 0.012f, 5f), "construction_area", 9, "Road_Construction", roadDamagesRoot));
+        CreateSemanticCube("Road_Obstacle_Box_01", new Vector3(8f, 0.45f, 2.4f), new Vector3(1.2f, 0.55f, 0.9f), "obstacle", 10, "Road_Obstacle", roadDamagesRoot);
 
         for (int i = 0; i < 4; i++)
         {
@@ -278,7 +319,7 @@ public class SceneBuilder : MonoBehaviour
         root.transform.SetParent(roadDamagesRoot, false);
         for (int i = 0; i < 5; i++)
         {
-            GameObject segment = CreateSemanticCube(objectName + "_Segment_" + i, center + new Vector3(i * 0.55f, 0f, Mathf.Sin(i) * 0.35f), new Vector3(0.75f, 0.035f, 0.08f), "crack", 6, "Road_Crack", root.transform);
+            GameObject segment = CreateSemanticCube(objectName + "_Segment_" + i, center + new Vector3(i * 0.55f, 0f, Mathf.Sin(i) * 0.35f), new Vector3(0.75f, 0.012f, 0.08f), "crack", 6, "Road_Crack", root.transform);
             segment.transform.rotation = Quaternion.Euler(0f, 20f + i * 16f, 0f);
             RemoveCollider(segment);
         }
@@ -300,27 +341,66 @@ public class SceneBuilder : MonoBehaviour
 
         Vehicle = vehicleRoot.AddComponent<VehicleController>();
 
-        GameObject body = CreateSemanticCube("Vehicle_Body", Vector3.zero, new Vector3(2.1f, 0.7f, 4f), "obstacle", 10, "Road_Obstacle", vehicleRoot.transform);
-        body.transform.localPosition = new Vector3(0f, 0.15f, 0f);
-        RemoveCollider(body);
+        CreateDetailedVehicleVisual(vehicleRoot.transform, "Vehicle_Ego", vehiclePaintMaterial);
+        CreateTrafficVehicle("Vehicle_Traffic_Sedan_01", new Vector3(-18f, 0.75f, 1.8f), Quaternion.Euler(0f, 90f, 0f), new Color(0.62f, 0.64f, 0.65f));
+        CreateTrafficVehicle("Vehicle_Traffic_Hatchback_02", new Vector3(18f, 0.75f, -1.8f), Quaternion.Euler(0f, -90f, 0f), new Color(0.16f, 0.28f, 0.55f));
+        CreateTrafficVehicle("Vehicle_Traffic_Van_03", new Vector3(2.4f, 0.85f, 18f), Quaternion.Euler(0f, 180f, 0f), new Color(0.82f, 0.82f, 0.74f));
+    }
 
-        GameObject cabin = CreateSemanticCube("Vehicle_Cabin", Vector3.zero, new Vector3(1.5f, 0.7f, 1.7f), "obstacle", 10, "Road_Obstacle", vehicleRoot.transform);
-        cabin.transform.localPosition = new Vector3(0f, 0.85f, -0.25f);
+    private void CreateTrafficVehicle(string objectName, Vector3 position, Quaternion rotation, Color paintColor)
+    {
+        GameObject vehicleRoot = new GameObject(objectName);
+        vehicleRoot.transform.SetParent(vehiclesRoot, false);
+        vehicleRoot.transform.SetPositionAndRotation(position, rotation);
+
+        BoxCollider collider = vehicleRoot.AddComponent<BoxCollider>();
+        collider.center = new Vector3(0f, 0.15f, 0f);
+        collider.size = new Vector3(2.05f, 1.15f, 4.2f);
+
+        Material paint = CreateMaterial("MAT_Normal_" + objectName + "_Paint", paintColor);
+        CreateDetailedVehicleVisual(vehicleRoot.transform, objectName, paint);
+    }
+
+    private void CreateDetailedVehicleVisual(Transform parent, string namePrefix, Material paintMaterial)
+    {
+        GameObject lowerBody = CreateSemanticCubeLocal(namePrefix + "_LowerBody", parent, new Vector3(0f, 0.13f, 0f), new Vector3(2.05f, 0.42f, 4.15f), "obstacle", 10, "Road_Obstacle", paintMaterial);
+        GameObject upperBody = CreateSemanticCubeLocal(namePrefix + "_UpperBody", parent, new Vector3(0f, 0.48f, -0.12f), new Vector3(1.82f, 0.35f, 3.05f), "obstacle", 10, "Road_Obstacle", paintMaterial);
+        GameObject cabin = CreateSemanticCubeLocal(namePrefix + "_Cabin", parent, new Vector3(0f, 0.9f, -0.25f), new Vector3(1.42f, 0.62f, 1.55f), "obstacle", 10, "Road_Obstacle", paintMaterial);
+        RemoveCollider(lowerBody);
+        RemoveCollider(upperBody);
         RemoveCollider(cabin);
+
+        AddVehiclePanel(parent, namePrefix + "_Windshield", new Vector3(0f, 0.99f, 0.58f), new Vector3(1.24f, 0.36f, 0.035f), Quaternion.Euler(-22f, 0f, 0f), vehicleWindowMaterial);
+        AddVehiclePanel(parent, namePrefix + "_RearWindow", new Vector3(0f, 0.99f, -1.06f), new Vector3(1.20f, 0.34f, 0.035f), Quaternion.Euler(20f, 0f, 0f), vehicleWindowMaterial);
+        AddVehiclePanel(parent, namePrefix + "_LeftWindow", new Vector3(-0.735f, 0.94f, -0.25f), new Vector3(0.035f, 0.34f, 1.05f), Quaternion.identity, vehicleWindowMaterial);
+        AddVehiclePanel(parent, namePrefix + "_RightWindow", new Vector3(0.735f, 0.94f, -0.25f), new Vector3(0.035f, 0.34f, 1.05f), Quaternion.identity, vehicleWindowMaterial);
+
+        AddVehiclePanel(parent, namePrefix + "_FrontBumper", new Vector3(0f, 0.13f, 2.16f), new Vector3(1.9f, 0.24f, 0.18f), Quaternion.identity, vehicleTireMaterial);
+        AddVehiclePanel(parent, namePrefix + "_RearBumper", new Vector3(0f, 0.13f, -2.16f), new Vector3(1.9f, 0.24f, 0.18f), Quaternion.identity, vehicleTireMaterial);
+        AddVehiclePanel(parent, namePrefix + "_LeftHeadlight", new Vector3(-0.55f, 0.31f, 2.27f), new Vector3(0.42f, 0.18f, 0.035f), Quaternion.identity, vehicleLightMaterial);
+        AddVehiclePanel(parent, namePrefix + "_RightHeadlight", new Vector3(0.55f, 0.31f, 2.27f), new Vector3(0.42f, 0.18f, 0.035f), Quaternion.identity, vehicleLightMaterial);
+        AddVehiclePanel(parent, namePrefix + "_LeftTailLight", new Vector3(-0.55f, 0.31f, -2.27f), new Vector3(0.36f, 0.16f, 0.035f), Quaternion.identity, vehicleTailLightMaterial);
+        AddVehiclePanel(parent, namePrefix + "_RightTailLight", new Vector3(0.55f, 0.31f, -2.27f), new Vector3(0.36f, 0.16f, 0.035f), Quaternion.identity, vehicleTailLightMaterial);
 
         Vector3[] wheelPositions =
         {
-            new Vector3(-1.15f, -0.35f, 1.35f), new Vector3(1.15f, -0.35f, 1.35f),
-            new Vector3(-1.15f, -0.35f, -1.35f), new Vector3(1.15f, -0.35f, -1.35f)
+            new Vector3(-1.05f, -0.28f, 1.32f), new Vector3(1.05f, -0.28f, 1.32f),
+            new Vector3(-1.05f, -0.28f, -1.32f), new Vector3(1.05f, -0.28f, -1.32f)
         };
 
         for (int i = 0; i < wheelPositions.Length; i++)
         {
-            GameObject wheel = CreateSemanticCylinder("Vehicle_Wheel_" + i, Vector3.zero, new Vector3(0.55f, 0.22f, 0.55f), "obstacle", 10, "Road_Obstacle", vehicleRoot.transform);
-            wheel.transform.localPosition = wheelPositions[i];
+            GameObject wheel = CreateSemanticCylinderLocal(namePrefix + "_Wheel_" + i, parent, wheelPositions[i], new Vector3(0.46f, 0.18f, 0.46f), "obstacle", 10, "Road_Obstacle", vehicleTireMaterial);
             wheel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
             RemoveCollider(wheel);
         }
+    }
+
+    private void AddVehiclePanel(Transform parent, string objectName, Vector3 localPosition, Vector3 scale, Quaternion localRotation, Material material)
+    {
+        GameObject panel = CreateSemanticCubeLocal(objectName, parent, localPosition, scale, "obstacle", 10, "Road_Obstacle", material);
+        panel.transform.localRotation = localRotation;
+        RemoveCollider(panel);
     }
 
     private void CreateCameras()
@@ -345,19 +425,41 @@ public class SceneBuilder : MonoBehaviour
         Camera camera = cameraObject.AddComponent<Camera>();
         camera.nearClipPlane = 0.05f;
         camera.farClipPlane = 500f;
+        camera.backgroundColor = new Color(0.56f, 0.70f, 0.88f);
         cameraObject.AddComponent<AudioListener>();
         return camera;
     }
 
-    private GameObject CreateSemanticCube(string objectName, Vector3 position, Vector3 scale, string className, int classId, string tagName, Transform parent)
+    private GameObject CreateSemanticCubeLocal(string objectName, Transform parent, Vector3 localPosition, Vector3 scale, string className, int classId, string tagName, Material displayMaterial = null)
+    {
+        GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        obj.name = objectName;
+        obj.transform.SetParent(parent, false);
+        obj.transform.localPosition = localPosition;
+        obj.transform.localRotation = Quaternion.identity;
+        obj.transform.localScale = scale;
+        obj.GetComponent<Renderer>().sharedMaterial = displayMaterial != null ? displayMaterial : normalMaterials[className];
+        AddInfo(obj, className, classId, tagName);
+        if (displayMaterial != null)
+        {
+            obj.GetComponent<RoadObjectInfo>().normalMaterial = displayMaterial;
+        }
+        return obj;
+    }
+
+    private GameObject CreateSemanticCube(string objectName, Vector3 position, Vector3 scale, string className, int classId, string tagName, Transform parent, Material displayMaterial = null)
     {
         GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cube);
         obj.name = objectName;
         obj.transform.SetParent(parent, false);
         obj.transform.position = position;
         obj.transform.localScale = scale;
-        obj.GetComponent<Renderer>().sharedMaterial = normalMaterials[className];
+        obj.GetComponent<Renderer>().sharedMaterial = displayMaterial != null ? displayMaterial : normalMaterials[className];
         AddInfo(obj, className, classId, tagName);
+        if (displayMaterial != null)
+        {
+            obj.GetComponent<RoadObjectInfo>().normalMaterial = displayMaterial;
+        }
         return obj;
     }
 
@@ -370,6 +472,23 @@ public class SceneBuilder : MonoBehaviour
         obj.transform.localScale = scale;
         obj.GetComponent<Renderer>().sharedMaterial = normalMaterials[className];
         AddInfo(obj, className, classId, tagName);
+        return obj;
+    }
+
+    private GameObject CreateSemanticCylinderLocal(string objectName, Transform parent, Vector3 localPosition, Vector3 scale, string className, int classId, string tagName, Material displayMaterial = null)
+    {
+        GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        obj.name = objectName;
+        obj.transform.SetParent(parent, false);
+        obj.transform.localPosition = localPosition;
+        obj.transform.localRotation = Quaternion.identity;
+        obj.transform.localScale = scale;
+        obj.GetComponent<Renderer>().sharedMaterial = displayMaterial != null ? displayMaterial : normalMaterials[className];
+        AddInfo(obj, className, classId, tagName);
+        if (displayMaterial != null)
+        {
+            obj.GetComponent<RoadObjectInfo>().normalMaterial = displayMaterial;
+        }
         return obj;
     }
 

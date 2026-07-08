@@ -30,9 +30,10 @@ public class DatasetCaptureManager : MonoBehaviour
         cameraManager = cameras;
         segmentationManager = segmentation;
         vehicle = vehicleController;
-        outputRoot = Path.Combine(Application.dataPath, outputDirectoryName);
+        outputRoot = Path.Combine(GetProjectRoot(), outputDirectoryName);
         EnsureOutputDirectories();
         WriteClassDefinitions();
+        captureIndex = GetNextCaptureIndex();
     }
 
     private void Update()
@@ -189,6 +190,13 @@ public class DatasetCaptureManager : MonoBehaviour
     private string ToUnityRelativePath(string absolutePath)
     {
         string normalized = absolutePath.Replace("\\", "/");
+        string projectRoot = GetProjectRoot().Replace("\\", "/");
+        if (normalized.StartsWith(projectRoot))
+        {
+            string relativePath = normalized.Substring(projectRoot.Length).TrimStart('/');
+            return relativePath;
+        }
+
         string dataPath = Application.dataPath.Replace("\\", "/");
         if (normalized.StartsWith(dataPath))
         {
@@ -196,6 +204,38 @@ public class DatasetCaptureManager : MonoBehaviour
         }
 
         return normalized;
+    }
+
+    private string GetProjectRoot()
+    {
+        DirectoryInfo dataDirectory = Directory.GetParent(Application.dataPath);
+        return dataDirectory != null ? dataDirectory.FullName : Application.dataPath;
+    }
+
+    private int GetNextCaptureIndex()
+    {
+        string rgbDirectory = Path.Combine(outputRoot, "rgb");
+        if (!Directory.Exists(rgbDirectory))
+        {
+            return 0;
+        }
+
+        int maxIndex = -1;
+        string[] files = Directory.GetFiles(rgbDirectory, "frame_*_rgb.png");
+        foreach (string file in files)
+        {
+            string fileName = Path.GetFileNameWithoutExtension(file);
+            if (fileName.StartsWith("frame_") && fileName.EndsWith("_rgb"))
+            {
+                string numberText = fileName.Substring(6, fileName.Length - 10);
+                if (int.TryParse(numberText, out int parsedIndex))
+                {
+                    maxIndex = Mathf.Max(maxIndex, parsedIndex);
+                }
+            }
+        }
+
+        return maxIndex + 1;
     }
 
     [Serializable]

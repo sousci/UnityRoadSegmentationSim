@@ -35,20 +35,20 @@ public static class Phase1ProjectSetup
 
     private static readonly Dictionary<string, Color> NormalColors = new Dictionary<string, Color>
     {
-        {"normal_road", new Color(0.16f, 0.16f, 0.16f)},
-        {"sidewalk", new Color(0.48f, 0.48f, 0.44f)},
-        {"lane_line", Color.white},
-        {"crosswalk", Color.white},
+        {"normal_road", new Color(0.20f, 0.20f, 0.19f)},
+        {"sidewalk", new Color(0.60f, 0.58f, 0.52f)},
+        {"lane_line", new Color(0.92f, 0.90f, 0.84f)},
+        {"crosswalk", new Color(0.92f, 0.90f, 0.84f)},
         {"puddle", new Color(0.06f, 0.18f, 0.28f, 0.85f)},
         {"crack", new Color(0.02f, 0.02f, 0.02f)},
         {"bump", new Color(0.33f, 0.28f, 0.21f)},
         {"hole", new Color(0.01f, 0.01f, 0.01f)},
         {"construction_area", new Color(0.95f, 0.45f, 0.05f)},
         {"obstacle", new Color(0.45f, 0.25f, 0.12f)},
-        {"building", new Color(0.54f, 0.56f, 0.58f)},
+        {"building", new Color(0.52f, 0.55f, 0.57f)},
         {"traffic_light", new Color(0.05f, 0.05f, 0.05f)},
-        {"pedestrian_area", new Color(0.35f, 0.46f, 0.32f)},
-        {"background", new Color(0.42f, 0.60f, 0.34f)}
+        {"pedestrian_area", new Color(0.36f, 0.40f, 0.31f)},
+        {"background", new Color(0.38f, 0.44f, 0.34f)}
     };
 
     private static readonly Dictionary<string, Color> SegmentationColors = new Dictionary<string, Color>
@@ -187,6 +187,13 @@ public static class Phase1ProjectSetup
     {
         if (File.Exists(path))
         {
+            Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null)
+            {
+                existing.color = color;
+                existing.SetFloat("_Glossiness", 0.22f);
+                EditorUtility.SetDirty(existing);
+            }
             return;
         }
 
@@ -194,6 +201,7 @@ public static class Phase1ProjectSetup
         {
             color = color
         };
+        material.SetFloat("_Glossiness", 0.22f);
         AssetDatabase.CreateAsset(material, path);
     }
 
