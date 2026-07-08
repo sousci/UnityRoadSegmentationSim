@@ -31,6 +31,12 @@ public class SceneBuilder : MonoBehaviour
     private Transform propsRoot;
     private Transform vehiclesRoot;
     private Transform camerasRoot;
+    private readonly float[] gridX = { -55f, 0f, 55f };
+    private readonly float[] gridZ = { -38f, 0f, 38f };
+    private const float MapWidth = 180f;
+    private const float MapDepth = 140f;
+    private const float RoadWidth = 8f;
+    private const float SidewalkOffset = 6.25f;
 
     public void Build(SegmentationMaterialManager manager)
     {
@@ -121,62 +127,97 @@ public class SceneBuilder : MonoBehaviour
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
         RenderSettings.ambientLight = new Color(0.58f, 0.64f, 0.70f);
 
-        CreateSemanticCube("Ground_Background", new Vector3(0f, -0.08f, 0f), new Vector3(90f, 0.08f, 90f), "background", 14, "Background", environmentRoot);
+        CreateSemanticCube("Ground_Background", new Vector3(0f, -0.08f, 0f), new Vector3(MapWidth + 24f, 0.08f, MapDepth + 24f), "background", 14, "Background", environmentRoot);
     }
 
     private void CreateRoads()
     {
-        CreateSemanticCube("Road_Normal_EastWest", new Vector3(0f, 0f, 0f), new Vector3(70f, 0.12f, 8f), "normal_road", 1, "Road_Normal", roadsRoot);
-        CreateSemanticCube("Road_Normal_NorthSouth", new Vector3(0f, 0.01f, 0f), new Vector3(8f, 0.12f, 70f), "normal_road", 1, "Road_Normal", roadsRoot);
+        foreach (float z in gridZ)
+        {
+            CreateSemanticCube("Road_Normal_EastWest_Z" + z.ToString("0"), new Vector3(0f, 0f, z), new Vector3(MapWidth, 0.12f, RoadWidth), "normal_road", 1, "Road_Normal", roadsRoot);
+            CreateSemanticCube("Road_Shoulder_EastWest_North_Z" + z.ToString("0"), new Vector3(0f, 0.06f, z + RoadWidth * 0.5f + 0.35f), new Vector3(MapWidth, 0.08f, 0.5f), "normal_road", 1, "Road_Normal", roadsRoot);
+            CreateSemanticCube("Road_Shoulder_EastWest_South_Z" + z.ToString("0"), new Vector3(0f, 0.06f, z - RoadWidth * 0.5f - 0.35f), new Vector3(MapWidth, 0.08f, 0.5f), "normal_road", 1, "Road_Normal", roadsRoot);
+        }
 
-        // Shoulders are split outside the intersection so road-edge masks do not cross the center.
-        CreateSemanticCube("Road_Shoulder_EastWest_North_Left", new Vector3(-21.5f, 0.06f, 4.35f), new Vector3(27f, 0.08f, 0.5f), "normal_road", 1, "Road_Normal", roadsRoot);
-        CreateSemanticCube("Road_Shoulder_EastWest_North_Right", new Vector3(21.5f, 0.06f, 4.35f), new Vector3(27f, 0.08f, 0.5f), "normal_road", 1, "Road_Normal", roadsRoot);
-        CreateSemanticCube("Road_Shoulder_EastWest_South_Left", new Vector3(-21.5f, 0.06f, -4.35f), new Vector3(27f, 0.08f, 0.5f), "normal_road", 1, "Road_Normal", roadsRoot);
-        CreateSemanticCube("Road_Shoulder_EastWest_South_Right", new Vector3(21.5f, 0.06f, -4.35f), new Vector3(27f, 0.08f, 0.5f), "normal_road", 1, "Road_Normal", roadsRoot);
-        CreateSemanticCube("Road_Shoulder_NorthSouth_East_North", new Vector3(4.35f, 0.07f, 21.5f), new Vector3(0.5f, 0.08f, 27f), "normal_road", 1, "Road_Normal", roadsRoot);
-        CreateSemanticCube("Road_Shoulder_NorthSouth_East_South", new Vector3(4.35f, 0.07f, -21.5f), new Vector3(0.5f, 0.08f, 27f), "normal_road", 1, "Road_Normal", roadsRoot);
-        CreateSemanticCube("Road_Shoulder_NorthSouth_West_North", new Vector3(-4.35f, 0.07f, 21.5f), new Vector3(0.5f, 0.08f, 27f), "normal_road", 1, "Road_Normal", roadsRoot);
-        CreateSemanticCube("Road_Shoulder_NorthSouth_West_South", new Vector3(-4.35f, 0.07f, -21.5f), new Vector3(0.5f, 0.08f, 27f), "normal_road", 1, "Road_Normal", roadsRoot);
+        foreach (float x in gridX)
+        {
+            CreateSemanticCube("Road_Normal_NorthSouth_X" + x.ToString("0"), new Vector3(x, 0.01f, 0f), new Vector3(RoadWidth, 0.12f, MapDepth), "normal_road", 1, "Road_Normal", roadsRoot);
+            CreateSemanticCube("Road_Shoulder_NorthSouth_East_X" + x.ToString("0"), new Vector3(x + RoadWidth * 0.5f + 0.35f, 0.07f, 0f), new Vector3(0.5f, 0.08f, MapDepth), "normal_road", 1, "Road_Normal", roadsRoot);
+            CreateSemanticCube("Road_Shoulder_NorthSouth_West_X" + x.ToString("0"), new Vector3(x - RoadWidth * 0.5f - 0.35f, 0.07f, 0f), new Vector3(0.5f, 0.08f, MapDepth), "normal_road", 1, "Road_Normal", roadsRoot);
+        }
     }
 
     private void CreateSidewalks()
     {
-        // Sidewalks are segmented so they stop before crosswalks and do not cover the intersection mask.
-        CreateSemanticCube("Sidewalk_North_Left", new Vector3(-21.5f, 0.11f, 6.25f), new Vector3(27f, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_North_Right", new Vector3(21.5f, 0.11f, 6.25f), new Vector3(27f, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_South_Left", new Vector3(-21.5f, 0.11f, -6.25f), new Vector3(27f, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_South_Right", new Vector3(21.5f, 0.11f, -6.25f), new Vector3(27f, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_East_North", new Vector3(6.25f, 0.12f, 21.5f), new Vector3(2.8f, 0.22f, 27f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_East_South", new Vector3(6.25f, 0.12f, -21.5f), new Vector3(2.8f, 0.22f, 27f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_West_North", new Vector3(-6.25f, 0.12f, 21.5f), new Vector3(2.8f, 0.22f, 27f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_West_South", new Vector3(-6.25f, 0.12f, -21.5f), new Vector3(2.8f, 0.22f, 27f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
+        foreach (float z in gridZ)
+        {
+            CreateSemanticCube("Sidewalk_EastWest_North_Z" + z.ToString("0"), new Vector3(0f, 0.11f, z + SidewalkOffset), new Vector3(MapWidth, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
+            CreateSemanticCube("Sidewalk_EastWest_South_Z" + z.ToString("0"), new Vector3(0f, 0.11f, z - SidewalkOffset), new Vector3(MapWidth, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
+        }
 
-        CreateSemanticCube("Sidewalk_Corner_NorthEast", new Vector3(6.25f, 0.13f, 6.25f), new Vector3(2.8f, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_Corner_NorthWest", new Vector3(-6.25f, 0.13f, 6.25f), new Vector3(2.8f, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_Corner_SouthEast", new Vector3(6.25f, 0.13f, -6.25f), new Vector3(2.8f, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
-        CreateSemanticCube("Sidewalk_Corner_SouthWest", new Vector3(-6.25f, 0.13f, -6.25f), new Vector3(2.8f, 0.22f, 2.8f), "sidewalk", 2, "Sidewalk", sidewalksRoot);
+        foreach (float x in gridX)
+        {
+            CreateSemanticCube("Sidewalk_NorthSouth_East_X" + x.ToString("0"), new Vector3(x + SidewalkOffset, 0.12f, 0f), new Vector3(2.8f, 0.22f, MapDepth), "sidewalk", 2, "Sidewalk", sidewalksRoot);
+            CreateSemanticCube("Sidewalk_NorthSouth_West_X" + x.ToString("0"), new Vector3(x - SidewalkOffset, 0.12f, 0f), new Vector3(2.8f, 0.22f, MapDepth), "sidewalk", 2, "Sidewalk", sidewalksRoot);
+        }
 
-        CreateSemanticCube("PedestrianArea_Plaza", new Vector3(18f, 0.13f, 11f), new Vector3(12f, 0.08f, 6f), "pedestrian_area", 13, "PedestrianArea", sidewalksRoot);
+        CreateSemanticCube("PedestrianArea_Plaza_East", new Vector3(76f, 0.13f, 22f), new Vector3(16f, 0.08f, 12f), "pedestrian_area", 13, "PedestrianArea", sidewalksRoot);
+        CreateSemanticCube("PedestrianArea_Plaza_West", new Vector3(-76f, 0.13f, -22f), new Vector3(16f, 0.08f, 12f), "pedestrian_area", 13, "PedestrianArea", sidewalksRoot);
     }
 
     private void CreateRoadMarks()
     {
-        for (int i = -5; i <= 5; i++)
+        for (int i = -13; i <= 13; i++)
         {
-            if (Mathf.Abs(i) <= 1)
+            float x = i * 6f;
+            if (IsNearAny(x, gridX, 10f))
             {
                 continue;
             }
 
-            RemoveCollider(CreateSemanticCube("LaneLine_EastWest_" + i, new Vector3(i * 6f, 0.067f, 0f), new Vector3(3.5f, 0.012f, 0.16f), "lane_line", 3, "LaneLine", roadMarksRoot));
-            RemoveCollider(CreateSemanticCube("LaneLine_NorthSouth_" + i, new Vector3(0f, 0.077f, i * 6f), new Vector3(0.16f, 0.012f, 3.5f), "lane_line", 3, "LaneLine", roadMarksRoot));
+            foreach (float z in gridZ)
+            {
+                RemoveCollider(CreateSemanticCube("LaneLine_EastWest_Z" + z.ToString("0") + "_" + i, new Vector3(x, 0.067f, z), new Vector3(3.5f, 0.012f, 0.16f), "lane_line", 3, "LaneLine", roadMarksRoot));
+            }
         }
 
-        CreateCrosswalk("Crosswalk_West", new Vector3(-7.5f, 0.077f, 0f), true);
-        CreateCrosswalk("Crosswalk_East", new Vector3(7.5f, 0.077f, 0f), true);
-        CreateCrosswalk("Crosswalk_North", new Vector3(0f, 0.077f, 7.5f), false);
-        CreateCrosswalk("Crosswalk_South", new Vector3(0f, 0.077f, -7.5f), false);
+        for (int i = -10; i <= 10; i++)
+        {
+            float z = i * 6f;
+            if (IsNearAny(z, gridZ, 10f))
+            {
+                continue;
+            }
+
+            foreach (float x in gridX)
+            {
+                RemoveCollider(CreateSemanticCube("LaneLine_NorthSouth_X" + x.ToString("0") + "_" + i, new Vector3(x, 0.077f, z), new Vector3(0.16f, 0.012f, 3.5f), "lane_line", 3, "LaneLine", roadMarksRoot));
+            }
+        }
+
+        foreach (float x in gridX)
+        {
+            foreach (float z in gridZ)
+            {
+                CreateCrosswalk("Crosswalk_West_X" + x.ToString("0") + "_Z" + z.ToString("0"), new Vector3(x - 7.5f, 0.077f, z), true);
+                CreateCrosswalk("Crosswalk_East_X" + x.ToString("0") + "_Z" + z.ToString("0"), new Vector3(x + 7.5f, 0.077f, z), true);
+                CreateCrosswalk("Crosswalk_North_X" + x.ToString("0") + "_Z" + z.ToString("0"), new Vector3(x, 0.077f, z + 7.5f), false);
+                CreateCrosswalk("Crosswalk_South_X" + x.ToString("0") + "_Z" + z.ToString("0"), new Vector3(x, 0.077f, z - 7.5f), false);
+            }
+        }
+    }
+
+    private bool IsNearAny(float value, float[] centers, float threshold)
+    {
+        foreach (float center in centers)
+        {
+            if (Mathf.Abs(value - center) <= threshold)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void CreateCrosswalk(string baseName, Vector3 center, bool stripesAlongZ)
@@ -194,9 +235,11 @@ public class SceneBuilder : MonoBehaviour
     {
         Vector3[] positions =
         {
-            new Vector3(-24f, 3f, 14f), new Vector3(-12f, 4f, 15f), new Vector3(28f, 5f, 15f),
-            new Vector3(-28f, 3.5f, -15f), new Vector3(16f, 4.5f, -15f), new Vector3(30f, 3f, -14f),
-            new Vector3(14f, 4f, 28f), new Vector3(-14f, 4.5f, -28f)
+            new Vector3(-82f, 3.5f, 56f), new Vector3(-66f, 5f, 20f), new Vector3(-80f, 4f, -54f),
+            new Vector3(-35f, 4.5f, 56f), new Vector3(-22f, 3.5f, 20f), new Vector3(-36f, 5.5f, -54f),
+            new Vector3(24f, 4f, 56f), new Vector3(34f, 5f, 20f), new Vector3(20f, 3.5f, -54f),
+            new Vector3(74f, 5.5f, 56f), new Vector3(82f, 4.5f, 18f), new Vector3(76f, 4f, -54f),
+            new Vector3(-82f, 4f, -18f), new Vector3(-18f, 5f, -18f), new Vector3(78f, 5f, -18f)
         };
 
         for (int i = 0; i < positions.Length; i++)
@@ -234,10 +277,14 @@ public class SceneBuilder : MonoBehaviour
 
     private void CreateTrafficObjects()
     {
-        CreateTrafficLight("TrafficLight_NorthEast", new Vector3(5.3f, 0f, 5.3f), Quaternion.Euler(0f, 225f, 0f));
-        CreateTrafficLight("TrafficLight_SouthWest", new Vector3(-5.3f, 0f, -5.3f), Quaternion.Euler(0f, 45f, 0f));
-        CreateTrafficLight("TrafficLight_NorthWest", new Vector3(-5.3f, 0f, 5.3f), Quaternion.Euler(0f, 135f, 0f));
-        CreateTrafficLight("TrafficLight_SouthEast", new Vector3(5.3f, 0f, -5.3f), Quaternion.Euler(0f, -45f, 0f));
+        foreach (float x in gridX)
+        {
+            foreach (float z in gridZ)
+            {
+                CreateTrafficLight("TrafficLight_NorthEast_X" + x.ToString("0") + "_Z" + z.ToString("0"), new Vector3(x + 5.3f, 0f, z + 5.3f), Quaternion.Euler(0f, 225f, 0f));
+                CreateTrafficLight("TrafficLight_SouthWest_X" + x.ToString("0") + "_Z" + z.ToString("0"), new Vector3(x - 5.3f, 0f, z - 5.3f), Quaternion.Euler(0f, 45f, 0f));
+            }
+        }
     }
 
     private void CreateTrafficLight(string objectName, Vector3 position, Quaternion rotation)
@@ -268,11 +315,16 @@ public class SceneBuilder : MonoBehaviour
 
     private void CreateProps()
     {
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 18; i++)
         {
-            float x = -30f + i * 8f;
-            CreateStreetLight("StreetLight_North_" + i, new Vector3(x, 0f, 8.4f));
-            CreateTree("Tree_South_" + i, new Vector3(x + 3f, 0f, -9.5f));
+            float x = -82f + i * 9.5f;
+            CreateStreetLight("StreetLight_Center_North_" + i, new Vector3(x, 0f, 8.4f));
+            CreateTree("Tree_Center_South_" + i, new Vector3(x + 3f, 0f, -9.5f));
+            if (i % 2 == 0)
+            {
+                CreateStreetLight("StreetLight_NorthRoad_" + i, new Vector3(x, 0f, 46.4f));
+                CreateTree("Tree_SouthRoad_" + i, new Vector3(x + 2f, 0f, -47.5f));
+            }
         }
     }
 
@@ -301,15 +353,27 @@ public class SceneBuilder : MonoBehaviour
     private void CreateRoadDamages()
     {
         RemoveCollider(CreateSemanticCylinder("Road_Puddle_01", new Vector3(-18f, 0.067f, -1.7f), new Vector3(2.2f, 0.012f, 1.2f), "puddle", 5, "Road_Puddle", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCylinder("Road_Puddle_02", new Vector3(42f, 0.067f, 36.3f), new Vector3(2.0f, 0.012f, 1.1f), "puddle", 5, "Road_Puddle", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCylinder("Road_Puddle_03", new Vector3(-64f, 0.067f, -36.1f), new Vector3(1.8f, 0.012f, 1.0f), "puddle", 5, "Road_Puddle", roadDamagesRoot));
         CreateCrack("Road_Crack_01", new Vector3(-8f, 0.067f, 2.2f));
+        CreateCrack("Road_Crack_02", new Vector3(55f, 0.077f, -18f));
+        CreateCrack("Road_Crack_03", new Vector3(-55f, 0.077f, 22f));
         RemoveCollider(CreateSemanticCube("Road_Bump_01", new Vector3(14f, 0.12f, -1.8f), new Vector3(3.2f, 0.12f, 1.0f), "bump", 7, "Road_Bump", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCube("Road_Bump_02", new Vector3(-28f, 0.12f, 38f), new Vector3(2.8f, 0.12f, 0.9f), "bump", 7, "Road_Bump", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCube("Road_Bump_03", new Vector3(70f, 0.12f, -38f), new Vector3(2.8f, 0.12f, 0.9f), "bump", 7, "Road_Bump", roadDamagesRoot));
         RemoveCollider(CreateSemanticCylinder("Road_Hole_01", new Vector3(22f, 0.073f, 1.7f), new Vector3(1.5f, 0.025f, 1.5f), "hole", 8, "Road_Hole", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCylinder("Road_Hole_02", new Vector3(-52f, 0.073f, -16f), new Vector3(1.3f, 0.025f, 1.3f), "hole", 8, "Road_Hole", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCylinder("Road_Hole_03", new Vector3(55f, 0.073f, 20f), new Vector3(1.4f, 0.025f, 1.4f), "hole", 8, "Road_Hole", roadDamagesRoot));
         RemoveCollider(CreateSemanticCube("Road_Construction_Zone_01", new Vector3(-1.8f, 0.077f, -20f), new Vector3(4f, 0.012f, 5f), "construction_area", 9, "Road_Construction", roadDamagesRoot));
+        RemoveCollider(CreateSemanticCube("Road_Construction_Zone_02", new Vector3(36f, 0.077f, 38f), new Vector3(5f, 0.012f, 4f), "construction_area", 9, "Road_Construction", roadDamagesRoot));
         CreateSemanticCube("Road_Obstacle_Box_01", new Vector3(8f, 0.45f, 2.4f), new Vector3(1.2f, 0.55f, 0.9f), "obstacle", 10, "Road_Obstacle", roadDamagesRoot);
+        CreateSemanticCube("Road_Obstacle_Box_02", new Vector3(-38f, 0.45f, -35.8f), new Vector3(1.1f, 0.5f, 0.85f), "obstacle", 10, "Road_Obstacle", roadDamagesRoot);
+        CreateSemanticCube("Road_Obstacle_Box_03", new Vector3(62f, 0.45f, 1.9f), new Vector3(1.0f, 0.5f, 0.8f), "obstacle", 10, "Road_Obstacle", roadDamagesRoot);
 
         for (int i = 0; i < 4; i++)
         {
             CreateSemanticCylinder("Road_Construction_Cone_" + i, new Vector3(-3.4f + i * 1.1f, 0.45f, -17.7f), new Vector3(0.45f, 0.45f, 0.45f), "construction_area", 9, "Road_Construction", roadDamagesRoot);
+            CreateSemanticCylinder("Road_Construction_Cone_B_" + i, new Vector3(34.2f + i * 1.1f, 0.45f, 40.2f), new Vector3(0.45f, 0.45f, 0.45f), "construction_area", 9, "Road_Construction", roadDamagesRoot);
         }
     }
 
@@ -329,7 +393,7 @@ public class SceneBuilder : MonoBehaviour
     {
         GameObject vehicleRoot = new GameObject("Vehicle_Ego");
         vehicleRoot.transform.SetParent(vehiclesRoot, false);
-        vehicleRoot.transform.position = new Vector3(-28f, 0.75f, -1.8f);
+        vehicleRoot.transform.position = new Vector3(-74f, 0.75f, -1.8f);
         vehicleRoot.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
 
         Rigidbody rb = vehicleRoot.AddComponent<Rigidbody>();
@@ -345,6 +409,9 @@ public class SceneBuilder : MonoBehaviour
         CreateTrafficVehicle("Vehicle_Traffic_Sedan_01", new Vector3(-18f, 0.75f, 1.8f), Quaternion.Euler(0f, 90f, 0f), new Color(0.62f, 0.64f, 0.65f));
         CreateTrafficVehicle("Vehicle_Traffic_Hatchback_02", new Vector3(18f, 0.75f, -1.8f), Quaternion.Euler(0f, -90f, 0f), new Color(0.16f, 0.28f, 0.55f));
         CreateTrafficVehicle("Vehicle_Traffic_Van_03", new Vector3(2.4f, 0.85f, 18f), Quaternion.Euler(0f, 180f, 0f), new Color(0.82f, 0.82f, 0.74f));
+        CreateTrafficVehicle("Vehicle_Traffic_Sedan_04", new Vector3(-48f, 0.75f, 36.2f), Quaternion.Euler(0f, -90f, 0f), new Color(0.86f, 0.88f, 0.9f));
+        CreateTrafficVehicle("Vehicle_Traffic_Hatchback_05", new Vector3(48f, 0.75f, -36.2f), Quaternion.Euler(0f, 90f, 0f), new Color(0.1f, 0.2f, 0.62f));
+        CreateTrafficVehicle("Vehicle_Traffic_Van_06", new Vector3(-55f, 0.85f, -22f), Quaternion.Euler(0f, 0f, 0f), new Color(0.75f, 0.74f, 0.68f));
     }
 
     private void CreateTrafficVehicle(string objectName, Vector3 position, Quaternion rotation, Color paintColor)
@@ -405,16 +472,16 @@ public class SceneBuilder : MonoBehaviour
 
     private void CreateCameras()
     {
-        MainCamera = CreateCamera("Main Camera", new Vector3(-22f, 16f, -22f), Quaternion.Euler(35f, 45f, 0f), camerasRoot);
+        MainCamera = CreateCamera("Main Camera", new Vector3(-58f, 32f, -62f), Quaternion.Euler(38f, 43f, 0f), camerasRoot);
         VehicleCamera = CreateCamera("VehicleCamera", Vector3.zero, Quaternion.identity, camerasRoot);
         VehicleCamera.transform.SetParent(Vehicle.transform, false);
         VehicleCamera.transform.localPosition = new Vector3(0f, 1.35f, 1.9f);
         VehicleCamera.transform.localRotation = Quaternion.Euler(8f, 0f, 0f);
         VehicleCamera.fieldOfView = 70f;
 
-        TopViewCamera = CreateCamera("TopViewCamera", new Vector3(0f, 55f, 0f), Quaternion.Euler(90f, 0f, 0f), camerasRoot);
+        TopViewCamera = CreateCamera("TopViewCamera", new Vector3(0f, 95f, 0f), Quaternion.Euler(90f, 0f, 0f), camerasRoot);
         TopViewCamera.orthographic = true;
-        TopViewCamera.orthographicSize = 42f;
+        TopViewCamera.orthographicSize = 88f;
     }
 
     private Camera CreateCamera(string objectName, Vector3 position, Quaternion rotation, Transform parent)

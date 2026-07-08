@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     private UIManager uiManager;
     private DatasetCaptureManager datasetCaptureManager;
     private RealtimeSegmentationManager realtimeSegmentationManager;
+    private AutoDriveCaptureController autoDriveCaptureController;
     private bool isPaused;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -84,6 +85,11 @@ public class GameManager : MonoBehaviour
             realtimeSegmentationManager.SwitchProvider();
         }
 
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            autoDriveCaptureController.Toggle();
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             isPaused = !isPaused;
@@ -99,12 +105,14 @@ public class GameManager : MonoBehaviour
         uiManager = gameObject.AddComponent<UIManager>();
         datasetCaptureManager = gameObject.AddComponent<DatasetCaptureManager>();
         realtimeSegmentationManager = gameObject.AddComponent<RealtimeSegmentationManager>();
+        autoDriveCaptureController = gameObject.AddComponent<AutoDriveCaptureController>();
 
         sceneBuilder.Build(segmentationManager);
         cameraManager.Configure(sceneBuilder.MainCamera, sceneBuilder.VehicleCamera, sceneBuilder.TopViewCamera);
         datasetCaptureManager.Initialize(cameraManager, segmentationManager, sceneBuilder.Vehicle);
         realtimeSegmentationManager.Initialize(cameraManager, segmentationManager);
-        uiManager.Initialize(sceneBuilder.Vehicle, cameraManager, segmentationManager, datasetCaptureManager, realtimeSegmentationManager);
+        autoDriveCaptureController.Initialize(sceneBuilder.Vehicle, datasetCaptureManager, sceneBuilder.VehicleCamera);
+        uiManager.Initialize(sceneBuilder.Vehicle, cameraManager, segmentationManager, datasetCaptureManager, realtimeSegmentationManager, autoDriveCaptureController);
     }
 
     private Transform CreateRoot(string objectName)

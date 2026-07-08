@@ -16,6 +16,8 @@ public class VehicleController : MonoBehaviour
     public float maxSpeed = 12f;
     public float maxReverseSpeed = 6f;
 
+    public bool UseExternalInput { get; private set; }
+
     public float CurrentSpeedKmh
     {
         get
@@ -29,6 +31,7 @@ public class VehicleController : MonoBehaviour
     private Quaternion startRotation;
     private float throttleInput;
     private float steeringInput;
+    private bool brakeInput;
     private float currentSpeed;
     private float fixedYPosition;
 
@@ -54,8 +57,14 @@ public class VehicleController : MonoBehaviour
 
     private void ReadInput()
     {
+        if (UseExternalInput)
+        {
+            return;
+        }
+
         throttleInput = 0f;
         steeringInput = 0f;
+        brakeInput = false;
 
         if (Input.GetKey(KeyCode.W))
         {
@@ -74,11 +83,13 @@ public class VehicleController : MonoBehaviour
         {
             steeringInput = 1f;
         }
+
+        brakeInput = Input.GetKey(KeyCode.Space);
     }
 
     private void UpdateSpeed()
     {
-        if (Input.GetKey(KeyCode.Space))
+        if (brakeInput)
         {
             currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, brakeStrength * Time.fixedDeltaTime);
             return;
@@ -123,5 +134,30 @@ public class VehicleController : MonoBehaviour
         cachedRigidbody.position = startPosition;
         cachedRigidbody.rotation = startRotation;
         currentSpeed = 0f;
+    }
+
+    public void SetExternalInput(float throttle, float steering, bool brake)
+    {
+        UseExternalInput = true;
+        throttleInput = Mathf.Clamp(throttle, -1f, 1f);
+        steeringInput = Mathf.Clamp(steering, -1f, 1f);
+        brakeInput = brake;
+    }
+
+    public void ClearExternalInput()
+    {
+        UseExternalInput = false;
+        throttleInput = 0f;
+        steeringInput = 0f;
+        brakeInput = false;
+    }
+
+    public void TeleportTo(Vector3 position, Quaternion rotation)
+    {
+        transform.SetPositionAndRotation(position, rotation);
+        cachedRigidbody.position = position;
+        cachedRigidbody.rotation = rotation;
+        currentSpeed = 0f;
+        fixedYPosition = position.y;
     }
 }

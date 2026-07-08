@@ -21,16 +21,18 @@ public class UIManager : MonoBehaviour
     private SegmentationMaterialManager segmentationManager;
     private DatasetCaptureManager datasetCaptureManager;
     private RealtimeSegmentationManager realtimeSegmentationManager;
+    private AutoDriveCaptureController autoDriveCaptureController;
     private bool isHelpVisible = true;
     private bool isVehiclePipVisible = true;
 
-    public void Initialize(VehicleController vehicleController, CameraManager cameras, SegmentationMaterialManager segmentation, DatasetCaptureManager captureManager, RealtimeSegmentationManager realtimeSegmentation)
+    public void Initialize(VehicleController vehicleController, CameraManager cameras, SegmentationMaterialManager segmentation, DatasetCaptureManager captureManager, RealtimeSegmentationManager realtimeSegmentation, AutoDriveCaptureController autoDriveCapture)
     {
         vehicle = vehicleController;
         cameraManager = cameras;
         segmentationManager = segmentation;
         datasetCaptureManager = captureManager;
         realtimeSegmentationManager = realtimeSegmentation;
+        autoDriveCaptureController = autoDriveCapture;
         CreateCanvas();
     }
 
@@ -46,12 +48,13 @@ public class UIManager : MonoBehaviour
         string segmentationMode = segmentationManager != null && segmentationManager.IsSegmentationMode ? "ON" : "OFF";
         string captureMode = datasetCaptureManager != null && datasetCaptureManager.IsContinuousCaptureEnabled ? "AUTO" : "MANUAL";
         string realtimeMode = realtimeSegmentationManager != null && realtimeSegmentationManager.IsEnabled ? "ON" : "OFF";
+        string autoDriveMode = autoDriveCaptureController != null ? autoDriveCaptureController.StatusText : "OFF";
 
         statusText.text =
             "Camera: " + cameraName + "\n" +
             "Speed: " + speed.ToString("0.0") + " km/h\n" +
-            "Seg: " + segmentationMode + "    RT: " + realtimeMode + "    Capture: " + captureMode + "\n" +
-            "I: RTSeg    O: Provider    K: Shot    L: Auto    P: PiP    H: Help";
+            "Seg: " + segmentationMode + "    RT: " + realtimeMode + "    Capture: " + captureMode + "    AutoDrive: " + autoDriveMode + "\n" +
+            "B: Auto drive capture    I: RTSeg    O: Provider    K: Shot    L: Auto    P: PiP    H: Help";
 
         if (segmentationLegendPanel != null && segmentationManager != null)
         {
@@ -124,7 +127,7 @@ public class UIManager : MonoBehaviour
         panelRect.anchorMax = new Vector2(0f, 1f);
         panelRect.pivot = new Vector2(0f, 1f);
         panelRect.anchoredPosition = new Vector2(12f, -12f);
-        panelRect.sizeDelta = new Vector2(520f, 92f);
+        panelRect.sizeDelta = new Vector2(650f, 92f);
 
         GameObject textObject = new GameObject("StatusText");
         textObject.transform.SetParent(panelObject.transform, false);
@@ -160,7 +163,7 @@ public class UIManager : MonoBehaviour
         panelRect.anchorMax = new Vector2(1f, 1f);
         panelRect.pivot = new Vector2(1f, 1f);
         panelRect.anchoredPosition = new Vector2(-12f, -12f);
-        panelRect.sizeDelta = new Vector2(440f, 390f);
+        panelRect.sizeDelta = new Vector2(460f, 430f);
 
         GameObject titleObject = new GameObject("HelpTitle");
         titleObject.transform.SetParent(helpPanel.transform, false);
@@ -192,6 +195,9 @@ public class UIManager : MonoBehaviour
             "Driving\n" +
             "W/S: Forward / Reverse    A/D: Steer\n" +
             "Space: Brake              R: Reset vehicle\n\n" +
+            "Dataset Route\n" +
+            "B: Toggle auto drive + capture\n" +
+            "Auto mode follows fixed waypoints with small random jitter.\n\n" +
             "View\n" +
             "C: Switch camera\n" +
             "P: Show / hide VehicleCamera PiP\n" +
@@ -212,7 +218,7 @@ public class UIManager : MonoBehaviour
             "O switches GroundTruth and external HTTP model.\n\n" +
             "Capture Output\n" +
             "Captures/rgb, mask, metadata\n\n" +
-            "Phase 1 excludes AI inference, VR, OSM, and autopilot.";
+            "Phase 1 excludes VR, OSM, and full autonomous driving.";
 
         RectTransform textRect = textObject.GetComponent<RectTransform>();
         textRect.anchorMin = Vector2.zero;
