@@ -34,7 +34,7 @@ INPUT_NAME = None
 INPUT_SHAPE = None
 CONFIG = None
 
-UNITY_PALETTE = np.array(
+DEFAULT_UNITY_PALETTE = np.array(
     [
         [25, 25, 25],      # 0 unknown/background
         [32, 32, 32],      # 1 normal_road
@@ -54,6 +54,7 @@ UNITY_PALETTE = np.array(
     ],
     dtype=np.uint8,
 )
+UNITY_PALETTE = DEFAULT_UNITY_PALETTE.copy()
 
 RESAMPLE_BILINEAR = getattr(getattr(Image, "Resampling", Image), "BILINEAR")
 RESAMPLE_NEAREST = getattr(getattr(Image, "Resampling", Image), "NEAREST")
@@ -72,6 +73,7 @@ class ModelConfig:
     output_mode: str = "auto"
     providers: Sequence[str] = ("CPUExecutionProvider",)
     class_remap: Optional[Mapping[str, int]] = None
+    palette: Optional[str] = None
     onnx_log_severity_level: int = 3
     mask_mode_filter_size: int = 0
 
@@ -293,6 +295,34 @@ def load_session(model_path: Optional[str]):
     print(f"Input shape: {INPUT_SHAPE}")
 
 
+def parse_hex_rgb(hex_rgb: str) -> tuple[int, int, int]:
+    value = hex_rgb.strip().lstrip("#")
+    if len(value) != 6:
+        raise ValueError(f"Invalid RGB hex value: {hex_rgb}")
+    return int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16)
+
+
+def load_palette(palette_path: Optional[str]) -> None:
+    global UNITY_PALETTE
+    if not palette_path:
+        UNITY_PALETTE = DEFAULT_UNITY_PALETTE.copy()
+        return
+
+    path = Path(palette_path)
+    with path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+
+    max_class_id = max(int(entry["classId"]) for entry in data["classes"])
+    palette = np.zeros((max_class_id + 1, 3), dtype=np.uint8)
+    palette[0] = DEFAULT_UNITY_PALETTE[0]
+    for entry in data["classes"]:
+        class_id = int(entry["classId"])
+        palette[class_id] = parse_hex_rgb(entry["color"]["hexRgb"])
+
+    UNITY_PALETTE = palette
+    print(f"Loaded palette: {path}")
+
+
 def load_config(args) -> ModelConfig:
     data = {}
     if args.config:
@@ -328,6 +358,7 @@ def main():
     args = parser.parse_args()
 
     CONFIG = load_config(args)
+    load_palette(CONFIG.palette)
     load_session(CONFIG.model)
 
     server = QuietThreadingHTTPServer((args.host, args.port), SegmentationHandler)

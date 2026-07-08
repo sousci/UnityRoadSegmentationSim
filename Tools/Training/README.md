@@ -27,6 +27,13 @@ python -m pip install -r requirements.txt
 python prepare_unity_dataset.py --captures ..\..\Captures --output datasets\unity_road_segmentation
 ```
 
+If you reuse `Tools/Inference/.venv` for training/export, install this folder's
+requirements into that environment before running the training scripts:
+
+```powershell
+..\Inference\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
 Output layout:
 
 ```text
@@ -63,6 +70,9 @@ python export_segformer_onnx.py `
   --model models\segformer-b0-unity-road `
   --output ..\Inference\models\segformer-b0-unity-road\model.onnx
 ```
+
+If export fails with `ModuleNotFoundError: No module named 'onnxscript'`, install
+the updated requirements and run the export command again.
 
 Then update `Tools/Inference/model_config.local.json`:
 

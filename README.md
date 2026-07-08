@@ -228,6 +228,8 @@ Unity 側の操作:
 ```powershell
 cd C:\Users\admin\workspace\UnityRoadSegmentationSim\Tools\Training
 
+..\Inference\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
 ..\Inference\.venv\Scripts\python.exe prepare_unity_dataset.py --output datasets\unity_road_segmentation
 
 ..\Inference\.venv\Scripts\python.exe train_segformer_unity.py `

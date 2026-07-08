@@ -1,5 +1,5 @@
 {
-  "model": "models/segformer-b0-unity-road/model.onnx",
+  "model": "../Training/models/segformer_unity_finetuned.onnx",
   "input_width": 512,
   "input_height": 512,
   "input_layout": "NCHW",
@@ -9,6 +9,7 @@
   "std": [0.229, 0.224, 0.225],
   "output_mode": "logits",
   "providers": ["CPUExecutionProvider"],
+  "palette": "../../Captures/segmentation_classes.json",
   "onnx_log_severity_level": 3,
   "mask_mode_filter_size": 3
 }
